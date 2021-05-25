@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 func TestEmptyTable(t *testing.T) {
 	clearTable()
 
-	req, _ := http.NewRequest("GET", "/items", nil)
+	req, _ := http.NewRequest("GET", "/categories", nil)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
@@ -39,26 +39,26 @@ func TestEmptyTable(t *testing.T) {
 	}
 }
 
-func TestGetNonExistentItem(t *testing.T) {
+func TestGetNonExistentCategory(t *testing.T) {
 	clearTable()
 
-	req, _ := http.NewRequest("GET", "/item/13", nil)
+	req, _ := http.NewRequest("GET", "/category/13", nil)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusNotFound, response.Code)
 
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if m["error"] != "Item not found" {
-		t.Errorf("Expected the 'error' key of the response to be set to 'Item not found'. Got %s", m["error"])
+	if m["error"] != "Category not found" {
+		t.Errorf("Expected the 'error' key of the response to be set to 'Category not found'. Got %s", m["error"])
 	}
 }
 
-func TestCreateItem(t *testing.T) {
+func TestCreateCategory(t *testing.T) {
 	clearTable()
 
-	jsonString := []byte(`{"name":"Test item","description": "Test description"}`)
+	jsonString := []byte(`{"name":"Test category","description": "Test description"}`)
 
-	req, _ := http.NewRequest("POST", "/item", bytes.NewBuffer(jsonString))
+	req, _ := http.NewRequest("POST", "/category", bytes.NewBuffer(jsonString))
 	req.Header.Set("Content-Type", "application/json")
 
 	response := executeRequest(req)
@@ -67,75 +67,75 @@ func TestCreateItem(t *testing.T) {
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	if m["name"] != "Test item" {
-		t.Errorf("Expected name of item to be 'Test item'. Got %s", m["name"])
+	if m["name"] != "Test category" {
+		t.Errorf("Expected name of category to be 'Test category'. Got %s", m["name"])
 	}
 	if m["description"] != "Test description" {
-		t.Errorf("Expected name of item to be 'Test description'. Got %s", m["description"])
+		t.Errorf("Expected name of category to be 'Test description'. Got %s", m["description"])
 	}
 }
 
-func TestFetchItem(t *testing.T) {
+func TestFetchCategory(t *testing.T) {
 	clearTable()
-	addItems(1)
+	addCategories(1)
 
-	req, _ := http.NewRequest("GET", "/item/1", nil)
+	req, _ := http.NewRequest("GET", "/category/1", nil)
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
-func TestUpdateItem(t *testing.T) {
+func TestUpdateCategory(t *testing.T) {
 	clearTable()
-	addItems(1)
+	addCategories(1)
 
-	req, _ := http.NewRequest("GET", "/item/1", nil)
+	req, _ := http.NewRequest("GET", "/category/1", nil)
 	response := executeRequest(req)
 
-	var originalItem map[string]interface{}
-	json.Unmarshal(response.Body.Bytes(), &originalItem)
+	var originalCategory map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &originalCategory)
 
 	jsonString := []byte(`{"name": "Updated name", "description": "Updated description"}`)
-	req, _ = http.NewRequest("PUT", "/item/1", bytes.NewBuffer(jsonString))
+	req, _ = http.NewRequest("PUT", "/category/1", bytes.NewBuffer(jsonString))
 	req.Header.Set("Content-Type", "application/json")
 
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	var updatedItem map[string]interface{}
-	json.Unmarshal(response.Body.Bytes(), &updatedItem)
+	var updatedCategory map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &updatedCategory)
 
-	if updatedItem["id"] != originalItem["id"] {
-		t.Errorf("Expected ID to be %v. Got %v", originalItem["id"], updatedItem["id"])
+	if updatedCategory["category_id"] != originalCategory["category_id"] {
+		t.Errorf("Expected ID to be %v. Got %v", originalCategory["category_id"], updatedCategory["category_id"])
 	}
-	if updatedItem["name"] == originalItem["name"] {
+	if updatedCategory["name"] == originalCategory["name"] {
 		t.Errorf(
 			"Expected name to change from %v to %v. Got %v",
-			originalItem["name"],
+			originalCategory["name"],
 			"Updated name",
-			updatedItem["name"],
+			updatedCategory["name"],
 		)
 	}
-	if updatedItem["description"] == originalItem["description"] {
+	if updatedCategory["description"] == originalCategory["description"] {
 		t.Errorf(
 			"Expected description to change from %v to %v. Got %v",
-			originalItem["description"],
+			originalCategory["description"],
 			"Updated description",
-			updatedItem["description"],
+			updatedCategory["description"],
 		)
 	}
 }
 
-func TestDeleteItem(t *testing.T) {
+func TestDeleteCategory(t *testing.T) {
 	clearTable()
-	addItems(1)
+	addCategories(1)
 
-	req, _ := http.NewRequest("DELETE", "/item/1", nil)
+	req, _ := http.NewRequest("DELETE", "/category/1", nil)
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	req, _ = http.NewRequest("GET", "/item/1", nil)
+	req, _ = http.NewRequest("GET", "/category/1", nil)
 	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusNotFound, response.Code)
@@ -149,8 +149,8 @@ func ensureTableExists() {
 }
 
 func clearTable() {
-	a.DB.Exec("DELETE FROM items")
-	a.DB.Exec("ALTER SEQUENCE items_id_seq RESTART WITH 1")
+	a.DB.Exec("DELETE FROM categories")
+	a.DB.Exec("ALTER SEQUENCE categories_category_id_seq RESTART WITH 1")
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
@@ -165,20 +165,20 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 	}
 }
 
-func addItems(count int) {
+func addCategories(count int) {
 	if count < 1 {
 		count = 1
 	}
 	for i := 0; i < count; i++ {
-		a.DB.Exec("INSERT INTO items(name, description) VALUES($1, $2)", "Item "+strconv.Itoa(i), "Description "+strconv.Itoa(i))
+		a.DB.Exec("INSERT INTO categories(name, description) VALUES($1, $2)", "Category "+strconv.Itoa(i), "Description "+strconv.Itoa(i))
 	}
 }
 
 // constants
-const tableCreationQuery = `CREATE TABLE IF NOT EXISTS items
+const tableCreationQuery = `CREATE TABLE IF NOT EXISTS categories
 (
-    id SERIAL,
+    category_id SERIAL,
     name TEXT NOT NULL,
 	description TEXT NOT NULL,
-    CONSTRAINT items_pkey PRIMARY KEY (id)
+    CONSTRAINT categories_pkey PRIMARY KEY (category_id)
 )`

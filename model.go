@@ -4,55 +4,55 @@ import (
 	"database/sql"
 )
 
-type item struct {
-	ID          int    `json:"id"`
+type category struct {
+	Category_ID int    `json:"category_id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-func (i *item) createItem(db *sql.DB) error {
+func (c *category) createCategory(db *sql.DB) error {
 	err := db.QueryRow(
-		"INSERT INTO items(name, description) VALUES ($1, $2) RETURNING id",
-		i.Name, i.Description,
-	).Scan(&i.ID)
+		"INSERT INTO categories(name, description) VALUES ($1, $2) RETURNING category_id",
+		c.Name, c.Description,
+	).Scan(&c.Category_ID)
 	return err
 }
 
-func (i *item) getItem(db *sql.DB) error {
+func (c *category) getCategory(db *sql.DB) error {
 	return db.QueryRow(
-		"SELECT name, description FROM items WHERE id=$1",
-		i.ID,
-	).Scan(&i.Name, &i.Description)
+		"SELECT name, description FROM categories WHERE category_id=$1",
+		c.Category_ID,
+	).Scan(&c.Name, &c.Description)
 }
 
-func (i *item) updateItem(db *sql.DB) error {
+func (c *category) updateCategory(db *sql.DB) error {
 	_, err := db.Exec(
-		"UPDATE items SET name=$1, description=$2 WHERE id=$3",
-		i.Name, i.Description, i.ID,
+		"UPDATE categories SET name=$1, description=$2 WHERE category_id=$3",
+		c.Name, c.Description, c.Category_ID,
 	)
 	return err
 }
 
-func (i *item) deleteItem(db *sql.DB) error {
-	_, err := db.Exec("DELETE FROM items WHERE id=$1", i.ID)
+func (c *category) deleteCategory(db *sql.DB) error {
+	_, err := db.Exec("DELETE FROM categories WHERE category_id=$1", c.Category_ID)
 	return err
 }
 
-func getItems(db *sql.DB) ([]item, error) {
-	rows, err := db.Query("SELECT name, description FROM items")
+func getCategories(db *sql.DB) ([]category, error) {
+	rows, err := db.Query("SELECT name, description FROM categories")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	items := []item{}
+	categories := []category{}
 	for rows.Next() {
-		var i item
-		err := rows.Scan(&i.ID, &i.Name, &i.Description)
+		var c category
+		err := rows.Scan(&c.Category_ID, &c.Name, &c.Description)
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		categories = append(categories, c)
 	}
-	return items, nil
+	return categories, nil
 }

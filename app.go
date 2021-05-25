@@ -32,11 +32,11 @@ func (a *App) Initialize(user, password, dbname string) {
 }
 
 func (a *App) initializeRoutes() {
-	a.Router.HandleFunc("/items", a.getItems).Methods("GET")
-	a.Router.HandleFunc("/item", a.createItem).Methods("POST")
-	a.Router.HandleFunc("/item/{id:[0-9]+}", a.getItem).Methods("GET")
-	a.Router.HandleFunc("/item/{id:[0-9]+}", a.updateItem).Methods("PUT")
-	a.Router.HandleFunc("/item/{id:[0-9]+}", a.deleteItem).Methods("DELETE")
+	a.Router.HandleFunc("/categories", a.getCategories).Methods("GET")
+	a.Router.HandleFunc("/category", a.createCategory).Methods("POST")
+	a.Router.HandleFunc("/category/{category_id:[0-9]+}", a.getCategory).Methods("GET")
+	a.Router.HandleFunc("/category/{category_id:[0-9]+}", a.updateCategory).Methods("PUT")
+	a.Router.HandleFunc("/category/{category_id:[0-9]+}", a.deleteCategory).Methods("DELETE")
 }
 
 func (a *App) Run(port string) {
@@ -44,89 +44,89 @@ func (a *App) Run(port string) {
 }
 
 // handlers
-func (a *App) getItem(w http.ResponseWriter, req *http.Request) {
+func (a *App) getCategory(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := strconv.Atoi(vars["category_id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid item ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
-	i := item{ID: id}
-	if err := i.getItem(a.DB); err != nil {
+	c := category{Category_ID: id}
+	if err := c.getCategory(a.DB); err != nil {
 		switch err {
 		case sql.ErrNoRows:
-			respondWithError(w, http.StatusNotFound, "Item not found")
+			respondWithError(w, http.StatusNotFound, "Category not found")
 		default:
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, i)
+	respondWithJSON(w, http.StatusOK, c)
 }
 
-func (a *App) getItems(w http.ResponseWriter, req *http.Request) {
-	items, err := getItems(a.DB)
+func (a *App) getCategories(w http.ResponseWriter, req *http.Request) {
+	categories, err := getCategories(a.DB)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJSON(w, http.StatusOK, items)
+	respondWithJSON(w, http.StatusOK, categories)
 }
 
-func (a *App) updateItem(w http.ResponseWriter, req *http.Request) {
+func (a *App) updateCategory(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := strconv.Atoi(vars["category_id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid item id")
+		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
-	var i item
+	var c category
 	decoder := json.NewDecoder(req.Body)
-	if err := decoder.Decode(&i); err != nil {
+	if err := decoder.Decode(&c); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	defer req.Body.Close()
-	i.ID = id
+	c.Category_ID = id
 
-	if err := i.updateItem(a.DB); err != nil {
+	if err := c.updateCategory(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, i)
+	respondWithJSON(w, http.StatusOK, c)
 }
 
-func (a *App) createItem(w http.ResponseWriter, req *http.Request) {
-	var i item
+func (a *App) createCategory(w http.ResponseWriter, req *http.Request) {
+	var c category
 	decoder := json.NewDecoder(req.Body)
-	if err := decoder.Decode(&i); err != nil {
+	if err := decoder.Decode(&c); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	defer req.Body.Close()
 
-	if err := i.createItem(a.DB); err != nil {
+	if err := c.createCategory(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, i)
+	respondWithJSON(w, http.StatusCreated, c)
 }
 
-func (a *App) deleteItem(w http.ResponseWriter, req *http.Request) {
+func (a *App) deleteCategory(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := strconv.Atoi(vars["category_id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid item id")
+		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
-	i := item{ID: id}
-	if err := i.deleteItem(a.DB); err != nil {
+	c := category{Category_ID: id}
+	if err := c.deleteCategory(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
