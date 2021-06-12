@@ -141,6 +141,7 @@ func TestDeleteCategory(t *testing.T) {
 	checkResponseCode(t, http.StatusNotFound, response.Code)
 }
 
+// task related tests:
 func TestDeleteCategoryWithTasks(t *testing.T) {
 	clearTables()
 	categoryId := addCategory()
@@ -155,4 +156,51 @@ func TestDeleteCategoryWithTasks(t *testing.T) {
 	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusNotFound, response.Code)
+}
+
+func TestUpdateCategoryTaskOrdering(t *testing.T) {
+	clearTables()
+	categoryId := addCategory()
+	addTasksToCategory(categoryId, 5)
+
+	// get all tasks check their order
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/category/%v/tasks", categoryId), nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var tasks []task
+	decoder := json.NewDecoder(response.Body)
+	if err := decoder.Decode(&tasks); err != nil {
+		t.Errorf("Could not read tasks data from request response. Error: %v", err)
+	}
+
+	var originalTasksListOrder []string
+	for _, t := range tasks {
+		originalTasksListOrder = append(originalTasksListOrder, t.Task)
+	}
+	fmt.Println(originalTasksListOrder)
+
+	fmt.Println(tasks)
+
+	// reverse the sequence of the tasks
+	for i := 0; i < len(tasks); i++ {
+		j := len(tasks) - i
+		tasks[i].Seq = j
+	}
+
+	fmt.Println(tasks)
+
+	// update order
+	jsonString, err := json.Marshal(tasks)
+	if err != nil {
+		t.Errorf("Could not encode tasks list back into json. Error: %v", err)
+	}
+
+	req, _ = http.NewRequest("PUT", "/category/1/tasks", bytes.NewBuffer(jsonString))
+	executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	// get all tasks and check their order
+
+	t.Error("Not Implemented.")
 }

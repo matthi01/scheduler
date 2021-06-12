@@ -24,6 +24,7 @@ const tasksTableCreation = `CREATE TABLE IF NOT EXISTS tasks
     task_id SERIAL PRIMARY KEY,
     category_id SERIAL references categories,
     task TEXT NOT NULL,
+	seq SERIAL NOT NULL,
 	complete BOOL NOT NULL
 )`
 
@@ -65,6 +66,7 @@ func clearCategoriesTable() {
 func clearTasksTable() {
 	a.DB.Exec("DELETE FROM tasks")
 	a.DB.Exec("ALTER SEQUENCE tasks_task_id_seq RESTART WITH 1")
+	a.DB.Exec("ALTER SEQUENCE tasks_seq_seq RESTART WITH 1")
 }
 
 func clearTables() {
