@@ -23,7 +23,7 @@ func TestEmptyCategoriesTable(t *testing.T) {
 func TestGetNonExistentCategory(t *testing.T) {
 	clearTables()
 
-	req, _ := http.NewRequest("GET", "/category/13", nil)
+	req, _ := http.NewRequest("GET", "/category/b119178b-2fd2-4a5c-9301-190c341df180", nil)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusNotFound, response.Code)
 
@@ -58,9 +58,9 @@ func TestCreateCategory(t *testing.T) {
 
 func TestFetchCategory(t *testing.T) {
 	clearTables()
-	addCategories(1)
+	categoryId := addCategory()
 
-	req, _ := http.NewRequest("GET", "/category/1", nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/category/%v", categoryId), nil)
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -87,16 +87,16 @@ func TestFetchAllCategories(t *testing.T) {
 
 func TestUpdateCategory(t *testing.T) {
 	clearTables()
-	addCategories(1)
+	categoryId := addCategory()
 
-	req, _ := http.NewRequest("GET", "/category/1", nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/category/%v", categoryId), nil)
 	response := executeRequest(req)
 
 	var originalCategory map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &originalCategory)
 
 	jsonString := []byte(`{"name": "Updated name", "description": "Updated description"}`)
-	req, _ = http.NewRequest("PUT", "/category/1", bytes.NewBuffer(jsonString))
+	req, _ = http.NewRequest("PUT", fmt.Sprintf("/category/%v", categoryId), bytes.NewBuffer(jsonString))
 	req.Header.Set("Content-Type", "application/json")
 
 	response = executeRequest(req)
@@ -128,24 +128,7 @@ func TestUpdateCategory(t *testing.T) {
 
 func TestDeleteCategory(t *testing.T) {
 	clearTables()
-	addCategories(1)
-
-	req, _ := http.NewRequest("DELETE", "/category/1", nil)
-	response := executeRequest(req)
-
-	checkResponseCode(t, http.StatusOK, response.Code)
-
-	req, _ = http.NewRequest("GET", "/category/1", nil)
-	response = executeRequest(req)
-
-	checkResponseCode(t, http.StatusNotFound, response.Code)
-}
-
-// task related tests:
-func TestDeleteCategoryWithTasks(t *testing.T) {
-	clearTables()
 	categoryId := addCategory()
-	addTaskToCategory(categoryId)
 
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("/category/%v", categoryId), nil)
 	response := executeRequest(req)
@@ -158,49 +141,83 @@ func TestDeleteCategoryWithTasks(t *testing.T) {
 	checkResponseCode(t, http.StatusNotFound, response.Code)
 }
 
-func TestUpdateCategoryTaskOrdering(t *testing.T) {
+// task related tests:
+func TestDeleteCategoryWithTasks(t *testing.T) {
 	clearTables()
 	categoryId := addCategory()
-	addTasksToCategory(categoryId, 5)
+	addTasksToCategory(categoryId, 3)
 
-	// get all tasks check their order
-	req, _ := http.NewRequest("GET", fmt.Sprintf("/category/%v/tasks", categoryId), nil)
+	// delete the category
+	req, _ := http.NewRequest("DELETE", fmt.Sprintf("/category/%v", categoryId), nil)
 	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/category/%v", categoryId), nil)
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusNotFound, response.Code)
+
+	// check that tasks were deleted
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/category/%v/tasks", categoryId), nil)
+	response = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
 	var tasks []task
 	decoder := json.NewDecoder(response.Body)
+
 	if err := decoder.Decode(&tasks); err != nil {
 		t.Errorf("Could not read tasks data from request response. Error: %v", err)
 	}
-
-	var originalTasksListOrder []string
-	for _, t := range tasks {
-		originalTasksListOrder = append(originalTasksListOrder, t.Task)
+	if len(tasks) != 0 {
+		t.Errorf("Expected to receive 0 tasks under category_id %v. Got %v", categoryId, len(tasks))
 	}
-	fmt.Println(originalTasksListOrder)
-
-	fmt.Println(tasks)
-
-	// reverse the sequence of the tasks
-	for i := 0; i < len(tasks); i++ {
-		j := len(tasks) - i
-		tasks[i].Seq = j
-	}
-
-	fmt.Println(tasks)
-
-	// update order
-	jsonString, err := json.Marshal(tasks)
-	if err != nil {
-		t.Errorf("Could not encode tasks list back into json. Error: %v", err)
-	}
-
-	req, _ = http.NewRequest("PUT", "/category/1/tasks", bytes.NewBuffer(jsonString))
-	executeRequest(req)
-	checkResponseCode(t, http.StatusOK, response.Code)
-
-	// get all tasks and check their order
-
-	t.Error("Not Implemented.")
 }
+
+// handle it on the front-end and
+// func TestUpdateCategoryTaskOrdering(t *testing.T) {
+// 	clearTables()
+// 	categoryId := addCategory()
+// 	addTasksToCategory(categoryId, 5)
+
+// 	// get all tasks check their order
+// 	req, _ := http.NewRequest("GET", fmt.Sprintf("/category/%v/tasks", categoryId), nil)
+// 	response := executeRequest(req)
+// 	checkResponseCode(t, http.StatusOK, response.Code)
+
+// 	var tasks []task
+// 	decoder := json.NewDecoder(response.Body)
+// 	if err := decoder.Decode(&tasks); err != nil {
+// 		t.Errorf("Could not read tasks data from request response. Error: %v", err)
+// 	}
+
+// 	var originalTasksListOrder []string
+// 	for _, t := range tasks {
+// 		originalTasksListOrder = append(originalTasksListOrder, t.Task)
+// 	}
+// 	fmt.Println(originalTasksListOrder)
+
+// 	fmt.Println(tasks)
+
+// 	// reverse the sequence of the tasks
+// 	for i := 0; i < len(tasks); i++ {
+// 		j := len(tasks) - i
+// 		tasks[i].Seq = j
+// 	}
+
+// 	fmt.Println(tasks)
+
+// 	// update order
+// 	jsonString, err := json.Marshal(tasks)
+// 	if err != nil {
+// 		t.Errorf("Could not encode tasks list back into json. Error: %v", err)
+// 	}
+
+// 	req, _ = http.NewRequest("PUT", "/category/1/tasks", bytes.NewBuffer(jsonString))
+// 	executeRequest(req)
+// 	checkResponseCode(t, http.StatusOK, response.Code)
+
+// 	// get all tasks and check their order
+
+// 	t.Error("Not Implemented.")
+// }
