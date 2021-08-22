@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -16,6 +17,8 @@ type App struct {
 	Router *mux.Router
 	DB     *sql.DB
 }
+
+var uuidPattern string = "[0-9a-f-]+"
 
 func (a *App) Initialize(host, port, user, dbname string) {
 	connectionString := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable", host, port, user, dbname)
@@ -35,32 +38,33 @@ func (a *App) initializeRoutes() {
 	// categories
 	a.Router.HandleFunc("/categories", a.getCategories).Methods("GET")
 	a.Router.HandleFunc("/category", a.createCategory).Methods("POST")
-	a.Router.HandleFunc("/category/{category_id:[0-9]+}", a.getCategory).Methods("GET")
-	a.Router.HandleFunc("/category/{category_id:[0-9]+}", a.updateCategory).Methods("PUT")
-	a.Router.HandleFunc("/category/{category_id:[0-9]+}", a.deleteCategory).Methods("DELETE")
+	a.Router.HandleFunc(fmt.Sprintf("/category/{category_id:%v}", uuidPattern), a.getCategory).Methods("GET")
+	a.Router.HandleFunc(fmt.Sprintf("/category/{category_id:%v}", uuidPattern), a.updateCategory).Methods("PUT")
+	a.Router.HandleFunc(fmt.Sprintf("/category/{category_id:%v}", uuidPattern), a.deleteCategory).Methods("DELETE")
 
 	// tasks
-	a.Router.HandleFunc("/category/{category_id:[0-9]+}/tasks", a.getTasks).Methods("GET")
-	a.Router.HandleFunc("/category/{category_id:[0-9]+}/task", a.createTask).Methods("POST")
-	a.Router.HandleFunc("/category/{category_id:[0-9]+}/task/{task_id:[0-9]+}", a.getTask).Methods("GET")
-	a.Router.HandleFunc("/category/{category_id:[0-9]+}/task/{task_id:[0-9]+}", a.updateTask).Methods("PUT")
-	a.Router.HandleFunc("/category/{category_id:[0-9]+}/task/{task_id:[0-9]+}", a.deleteTask).Methods("DELETE")
+	a.Router.HandleFunc(fmt.Sprintf("/category/{category_id:%v}/tasks", uuidPattern), a.getTasks).Methods("GET")
+	a.Router.HandleFunc(fmt.Sprintf("/category/{category_id:%v}/task", uuidPattern), a.createTask).Methods("POST")
+	a.Router.HandleFunc(fmt.Sprintf("/category/{category_id:%v}/task/{task_id:[0-9]+}", uuidPattern), a.getTask).Methods("GET")
+	a.Router.HandleFunc(fmt.Sprintf("/category/{category_id:%v}/task/{task_id:[0-9]+}", uuidPattern), a.updateTask).Methods("PUT")
+	a.Router.HandleFunc(fmt.Sprintf("/category/{category_id:%v}/task/{task_id:[0-9]+}", uuidPattern), a.deleteTask).Methods("DELETE")
 }
 
 func (a *App) Run(port string) {
-	log.Fatal(http.ListenAndServe(":8080", a.Router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("PORT")), a.Router))
 }
 
 // categories
 func (a *App) getCategory(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	id, err := strconv.Atoi(vars["category_id"])
-	if err != nil {
+	categoryId := vars["category_id"]
+
+	if !isValidUUID(categoryId) {
 		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
-	c := category{Category_ID: id}
+	c := category{Category_ID: categoryId}
 	if err := c.getCategory(a.DB); err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -85,11 +89,12 @@ func (a *App) getCategories(w http.ResponseWriter, req *http.Request) {
 
 func (a *App) updateCategory(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	id, err := strconv.Atoi(vars["category_id"])
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
-		return
-	}
+	// id, err := strconv.Atoi(vars["category_id"])
+	// if err != nil {
+	// 	respondWithError(w, http.StatusBadRequest, "Invalid category ID")
+	// 	return
+	// }
+	id := vars["category_id"]
 
 	var c category
 	decoder := json.NewDecoder(req.Body)
@@ -128,18 +133,20 @@ func (a *App) createCategory(w http.ResponseWriter, req *http.Request) {
 // to do: when deleting a category you need to also delete all tasks under that category first
 func (a *App) deleteCategory(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	id, err := strconv.Atoi(vars["category_id"])
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
-		return
-	}
+	// id, err := strconv.Atoi(vars["category_id"])
+	// if err != nil {
+	// 	respondWithError(w, http.StatusBadRequest, "Invalid category ID")
+	// 	return
+	// }
+
+	id := vars["category_id"]
 
 	c := category{Category_ID: id}
-	if err = c.deleteCategoryTasks(a.DB); err != nil {
+	if err := c.deleteCategoryTasks(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err = c.deleteCategory(a.DB); err != nil {
+	if err := c.deleteCategory(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -150,11 +157,11 @@ func (a *App) deleteCategory(w http.ResponseWriter, req *http.Request) {
 // tasks
 func (a *App) createTask(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	id, err := strconv.Atoi(vars["category_id"])
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
-		return
-	}
+	id := vars["category_id"]
+	// if err != nil {
+	// 	respondWithError(w, http.StatusBadRequest, "Invalid category ID")
+	// 	return
+	// }
 
 	t := task{Category_ID: id}
 	decoder := json.NewDecoder(req.Body)
@@ -174,11 +181,11 @@ func (a *App) createTask(w http.ResponseWriter, req *http.Request) {
 
 func (a *App) getTask(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	categoryId, err := strconv.Atoi(vars["category_id"])
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
-		return
-	}
+	categoryId := vars["category_id"]
+	// if err != nil {
+	// 	respondWithError(w, http.StatusBadRequest, "Invalid category ID")
+	// 	return
+	// }
 	taskId, err := strconv.Atoi(vars["task_id"])
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid task ID")
@@ -201,11 +208,12 @@ func (a *App) getTask(w http.ResponseWriter, req *http.Request) {
 
 func (a *App) getTasks(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	categoryId, err := strconv.Atoi(vars["category_id"])
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid category ID")
-		return
-	}
+	// categoryId, err := strconv.Atoi(vars["category_id"])
+	// if err != nil {
+	// 	respondWithError(w, http.StatusBadRequest, "Invalid category ID")
+	// 	return
+	// }
+	categoryId := vars["category_id"]
 
 	c := category{Category_ID: categoryId}
 	tasks, err := c.getTasks(a.DB)

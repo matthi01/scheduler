@@ -6,7 +6,7 @@ import (
 
 type task struct {
 	Task_ID     int    `json:"task_id"`
-	Category_ID int    `json:"category_id"`
+	Category_ID string `json:"category_id"`
 	Task        string `json:"task"`
 	Seq         int    `json:"seq"`
 	Complete    bool   `json:"complete"`
