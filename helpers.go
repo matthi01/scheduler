@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
 
 const categoriesTableCreation = `CREATE TABLE IF NOT EXISTS categories
 (
-    category_id SERIAL,
+    category_id uuid DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
 	description TEXT NOT NULL,
     CONSTRAINT categories_pkey PRIMARY KEY (category_id)
@@ -22,8 +23,9 @@ const categoriesTableCreation = `CREATE TABLE IF NOT EXISTS categories
 const tasksTableCreation = `CREATE TABLE IF NOT EXISTS tasks
 (
     task_id SERIAL PRIMARY KEY,
-    category_id SERIAL references categories,
+    category_id uuid references categories,
     task TEXT NOT NULL,
+	seq SERIAL NOT NULL,
 	complete BOOL NOT NULL
 )`
 
@@ -59,12 +61,12 @@ func ensureTablesExists() {
 
 func clearCategoriesTable() {
 	a.DB.Exec("DELETE FROM categories")
-	a.DB.Exec("ALTER SEQUENCE categories_category_id_seq RESTART WITH 1")
 }
 
 func clearTasksTable() {
 	a.DB.Exec("DELETE FROM tasks")
 	a.DB.Exec("ALTER SEQUENCE tasks_task_id_seq RESTART WITH 1")
+	a.DB.Exec("ALTER SEQUENCE tasks_seq_seq RESTART WITH 1")
 }
 
 func clearTables() {
@@ -84,17 +86,17 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 	}
 }
 
-func addCategory() int {
+func addCategory() string {
 	var c category
 	a.DB.QueryRow("INSERT INTO categories(name, description) VALUES($1, $2) RETURNING category_id", "Test Category", "Test Category Description").Scan(&c.Category_ID)
 	return c.Category_ID
 }
 
-func addCategories(count int) []int {
+func addCategories(count int) []string {
 	if count < 1 {
 		count = 1
 	}
-	var categoryIds []int
+	var categoryIds []string
 	for i := 0; i < count; i++ {
 		var c category
 		name := "Category " + strconv.Itoa(i)
@@ -105,13 +107,13 @@ func addCategories(count int) []int {
 	return categoryIds
 }
 
-func addTaskToCategory(categoryId int) int {
+func addTaskToCategory(categoryId string) int {
 	var t task
 	a.DB.QueryRow("INSERT INTO tasks(category_id, task, complete) VALUES($1, $2, $3) RETURNING task_id", categoryId, "Test Task", false).Scan(&t.Task_ID)
 	return t.Task_ID
 }
 
-func addTasksToCategory(categoryId, count int) []int {
+func addTasksToCategory(categoryId string, count int) []int {
 	if count < 1 {
 		count = 1
 	}
@@ -123,4 +125,9 @@ func addTasksToCategory(categoryId, count int) []int {
 		taskIds = append(taskIds, t.Task_ID)
 	}
 	return taskIds
+}
+
+func isValidUUID(id string) bool {
+	_, err := uuid.Parse(id)
+	return err == nil
 }

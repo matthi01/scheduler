@@ -38,11 +38,11 @@ func TestGetNonExistentTask(t *testing.T) {
 
 func TestCreateTask(t *testing.T) {
 	clearTables()
-	addCategories(1)
+	categoryId := addCategory()
 
 	jsonString := []byte(`{"task":"Test task","complete": false}`)
 
-	req, _ := http.NewRequest("POST", "/category/1/task", bytes.NewBuffer(jsonString))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("/category/%v/task", categoryId), bytes.NewBuffer(jsonString))
 	req.Header.Set("Content-Type", "application/json")
 
 	response := executeRequest(req)
@@ -58,13 +58,13 @@ func TestCreateTask(t *testing.T) {
 
 func TestFetchTask(t *testing.T) {
 	clearTables()
-	addCategories(1)
+	categoryId := addCategory()
 
 	taskCount := 2
-	addTasksToCategory(1, taskCount)
+	addTasksToCategory(categoryId, taskCount)
 
 	for i := 0; i < taskCount; i++ {
-		req, _ := http.NewRequest("GET", fmt.Sprintf("/category/1/task/%v", i+1), nil)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/category/%v/task/%v", categoryId, i+1), nil)
 		response := executeRequest(req)
 
 		checkResponseCode(t, http.StatusOK, response.Code)

@@ -6,8 +6,9 @@ import (
 
 type task struct {
 	Task_ID     int    `json:"task_id"`
-	Category_ID int    `json:"category_id"`
+	Category_ID string `json:"category_id"`
 	Task        string `json:"task"`
+	Seq         int    `json:"seq"`
 	Complete    bool   `json:"complete"`
 }
 
@@ -21,15 +22,15 @@ func (t *task) createTask(db *sql.DB) error {
 
 func (t *task) getTask(db *sql.DB) error {
 	return db.QueryRow(
-		"SELECT task_id, category_id, task, complete FROM tasks WHERE task_id=$1",
+		"SELECT task_id, category_id, task, seq, complete FROM tasks WHERE task_id=$1",
 		t.Task_ID,
-	).Scan(&t.Task_ID, &t.Category_ID, &t.Task, &t.Complete)
+	).Scan(&t.Task_ID, &t.Category_ID, &t.Task, &t.Seq, &t.Complete)
 }
 
 func (t *task) updateTask(db *sql.DB) error {
 	_, err := db.Exec(
-		"UPDATE tasks SET task=$1, complete=$2 WHERE task_id=$3",
-		t.Task, t.Complete, t.Task_ID,
+		"UPDATE tasks SET task=$1, seq=$2, complete=$3 WHERE task_id=$4",
+		t.Task, t.Seq, t.Complete, t.Task_ID,
 	)
 	return err
 }
@@ -40,7 +41,7 @@ func (t *task) deleteTask(db *sql.DB) error {
 }
 
 func (c *category) getTasks(db *sql.DB) ([]task, error) {
-	rows, err := db.Query("SELECT task_id, category_id, task, complete FROM tasks WHERE category_id=$1", c.Category_ID)
+	rows, err := db.Query("SELECT task_id, category_id, task, seq, complete FROM tasks WHERE category_id=$1", c.Category_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +50,7 @@ func (c *category) getTasks(db *sql.DB) ([]task, error) {
 	tasks := []task{}
 	for rows.Next() {
 		var tsk task
-		err := rows.Scan(&tsk.Task_ID, &tsk.Category_ID, &tsk.Task, &tsk.Complete)
+		err := rows.Scan(&tsk.Task_ID, &tsk.Category_ID, &tsk.Task, &tsk.Seq, &tsk.Complete)
 		if err != nil {
 			return nil, err
 		}
