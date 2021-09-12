@@ -56,6 +56,7 @@ func (a *App) Run(port string) {
 
 // categories
 func (a *App) getCategory(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	vars := mux.Vars(req)
 	categoryId := vars["category_id"]
 
@@ -79,6 +80,7 @@ func (a *App) getCategory(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *App) getCategories(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	categories, err := getCategories(a.DB)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -88,6 +90,7 @@ func (a *App) getCategories(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *App) updateCategory(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	vars := mux.Vars(req)
 	// id, err := strconv.Atoi(vars["category_id"])
 	// if err != nil {
@@ -114,6 +117,7 @@ func (a *App) updateCategory(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *App) createCategory(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	var c category
 	decoder := json.NewDecoder(req.Body)
 	if err := decoder.Decode(&c); err != nil {
@@ -132,6 +136,7 @@ func (a *App) createCategory(w http.ResponseWriter, req *http.Request) {
 
 // to do: when deleting a category you need to also delete all tasks under that category first
 func (a *App) deleteCategory(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	vars := mux.Vars(req)
 	// id, err := strconv.Atoi(vars["category_id"])
 	// if err != nil {
@@ -156,6 +161,7 @@ func (a *App) deleteCategory(w http.ResponseWriter, req *http.Request) {
 
 // tasks
 func (a *App) createTask(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	vars := mux.Vars(req)
 	id := vars["category_id"]
 	// if err != nil {
@@ -180,6 +186,7 @@ func (a *App) createTask(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *App) getTask(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	vars := mux.Vars(req)
 	categoryId := vars["category_id"]
 	// if err != nil {
@@ -207,6 +214,7 @@ func (a *App) getTask(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *App) getTasks(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	vars := mux.Vars(req)
 	// categoryId, err := strconv.Atoi(vars["category_id"])
 	// if err != nil {
@@ -225,6 +233,7 @@ func (a *App) getTasks(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *App) updateTask(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	vars := mux.Vars(req)
 	taskId, err := strconv.Atoi(vars["task_id"])
 
@@ -251,6 +260,7 @@ func (a *App) updateTask(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *App) deleteTask(w http.ResponseWriter, req *http.Request) {
+	enableCors(&w)
 	vars := mux.Vars(req)
 	taskId, err := strconv.Atoi(vars["task_id"])
 	if err != nil {
