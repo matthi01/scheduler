@@ -131,3 +131,8 @@ func isValidUUID(id string) bool {
 	_, err := uuid.Parse(id)
 	return err == nil
 }
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
