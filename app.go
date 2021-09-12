@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -50,7 +51,7 @@ func (a *App) initializeRoutes() {
 }
 
 func (a *App) Run(port string) {
-	log.Fatal(http.ListenAndServe(":8080", a.Router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("PORT")), a.Router))
 }
 
 // categories
